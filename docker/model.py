@@ -10,7 +10,7 @@ from datetime import datetime
 datetime.now().isoformat()
 from c8y import get_application_managed_object_id, platform_request
 
-import cv2, math, time
+import cv2, math, time, sys, os
 
 azure_image_classifier_rest = ''
 
@@ -38,7 +38,9 @@ class MeasurementGenerator(Thread):
         while True:
             try:
                 m = self.measurement_queue.get()
-                platform_request('POST', '/measurement/measurements', body=m)
+                print(f'Received measurement: {m}')
+                resp = platform_request('POST', '/measurement/measurements', body=m)
+                print(f'Raised measurement: {resp}')
             except Exception as e:
                 print(f'Failed to raise measurement: {e}')
 
@@ -50,12 +52,12 @@ class ImageAnalyzer(Thread):
         self.image_queue = q
         self.mobj_id = get_application_managed_object_id()
 
-    def get_measurement_json_template(self, fragment, series, value):
+    def get_measurement_json_template(self, fragment):
         return {
             "time": datetime.utcnow().isoformat() + 'Z',
             "type": "media_server_image_classification",
             "source": {"id": self.mobj_id},
-            "color": {
+            f"{fragment}": {
                 #f"{series}": {"value": value},
             },
         }
@@ -63,24 +65,28 @@ class ImageAnalyzer(Thread):
     def run(self):
         while True:
             try:
-                (stream, frame_bytes) = self.image_queue.get()
+                stream, frame = self.image_queue.get()
                 resp = requests.post(stream.analyser_url, headers={
                     'Content-Type': 'application/octet-stream',
-                }, data=frame_bytes)
+                    'Prediction-Key': stream.prediction_key,
+                }, data=frame.tobytes())
                 resp_json = resp.json()
-                print(resp_json)
-                m = self.get_measurement_json_template()
+                print(f'Azure response: {resp_json}')
+                m = self.get_measurement_json_template(stream.id)
                 for p in resp_json['predictions']:
-                    selected_val = float(p['probablility']) * 100
+                    selected_val = float(p['probability']) * 255
                     selected_tag = p['tagName']
                     m['color'][selected_tag] = {'value': selected_val}
-                    measurement_queue.put(m)
+                measurement_queue.put(m)
 
             except Exception as e:
                 print(f'Azure error: {e}')
+            sys.stdout.flush()
 
 img_analyser = ImageAnalyzer(image_analyser_queue)
-measurement_generator = ImageAnalyzer(measurement_queue)
+img_analyser.start()
+measurement_generator = MeasurementGenerator(measurement_queue)
+measurement_generator.start()
 
 class RTMPReader(Thread):
 
@@ -113,7 +119,8 @@ class RTMPReader(Thread):
                     else:
                         return
                 _, jpg = cv2.imencode('.jpg', frame)
-                image_analyser_queue.put((self.stream, jpg.tobytes()))
+                print(f'putting frame on queue')
+                image_analyser_queue.put((self.stream, jpg))
                 self.publish_frame_to_live_queues(frame)
                 #cv2.imwrite(f'img_{self.id}_{count}.jpg', frame)
                 count += 1

@@ -8,6 +8,7 @@ RUN mkdir media-server
 EXPOSE 80
 
 ADD config.py __init__.py model.py server.py c8y.py test.json media-server/
+ADD static media-server/static
 
 WORKDIR /media-server
 

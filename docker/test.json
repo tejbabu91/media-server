@@ -1,3 +1,6 @@
 {
-	"url": "rtmp://fms.105.net/live/rmc1"
+	"url": "rtmp://fms.105.net/live/rmc1",
+	"analyser_url": "https://southcentralus.api.cognitive.microsoft.com/customvision/v3.0/Prediction/44967e70-a45e-4d4c-a6d6-d839ee639255/classify/iterations/Iteration1/image",
+	"prediction_key": "cd7437a8b7a64e49adde0cb1742b649f",
+        "frame_interval_secs": 4.0
 }
