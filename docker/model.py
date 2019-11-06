@@ -57,7 +57,7 @@ class ImageAnalyzer(Thread):
             "time": datetime.utcnow().isoformat() + 'Z',
             "type": "media_server_image_classification",
             "source": {"id": self.mobj_id},
-            f"{fragment}": {
+            "color": {
                 #f"{series}": {"value": value},
             },
         }
