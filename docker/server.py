@@ -7,6 +7,7 @@ from flask import Flask, request, send_file, Response
 import tempfile
 from threading import Thread
 from model import Stream, MediaServer
+import sys
 
 scriptDir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
@@ -50,6 +51,5 @@ def packages_delete(sid):
 
 
 if __name__ == '__main__':
-    print(app.config)
     app.data = MediaServer()
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=(5000 if len(sys.argv) == 1 else int(sys.argv[1])))
