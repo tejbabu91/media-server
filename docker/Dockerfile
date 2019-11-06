@@ -5,7 +5,9 @@ RUN pip install flask opencv-python-headless opencv-contrib-python-headless imut
 
 RUN mkdir media-server
 
-ADD config.py __init__.py  model.py server.py test.json media-server/
+EXPOSE 80
+
+ADD config.py __init__.py model.py server.py c8y.py test.json media-server/
 
 WORKDIR /media-server
 

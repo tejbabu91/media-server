@@ -29,4 +29,6 @@ Build microservice using ./microservice pack --name media-server
 
 Upload microservice using ./microservice deploy -n media-server -d <tenant url> -u <username> -p <password> -te <tenant id>
 
+To build, upload and subscribe in a single step, use ./microservice pack deploy subscribe -n media-server -d <tenant url> -u <username> -p <password> -te <tenant id>
+
 Microservice upload script requires jq tool https://stedolan.github.io/jq/download/, download and add it to your path
