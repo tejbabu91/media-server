@@ -5,26 +5,91 @@ from typing import Dict
 from threading import Thread
 import copy
 import queue
+import requests
+from datetime import datetime
+datetime.now().isoformat()
+from c8y import get_application_managed_object_id, platform_request
 
 import cv2, math, time
 
+azure_image_classifier_rest = ''
 
 @dataclass_json()
 @dataclass(order=True)
 class Stream:
+    analyser_url: str
+    prediction_key: str
     id: str  = None
     url: str = field(default_factory=lambda : None)
     datafile: str = field(default_factory=lambda : None)
+    frame_interval_secs: float = field(default=1.0)
 
 
+image_analyser_queue = queue.SimpleQueue()
+measurement_queue = queue.SimpleQueue()
+
+class MeasurementGenerator(Thread):
+
+    def __init__(self, q):
+        super(MeasurementGenerator, self).__init__()
+        self.measurement_queue = q
+
+    def run(self):
+        while True:
+            try:
+                m = self.measurement_queue.get()
+                platform_request('POST', '/measurement/measurements', body=m)
+            except Exception as e:
+                print(f'Failed to raise measurement: {e}')
+
+
+class ImageAnalyzer(Thread):
+
+    def __init__(self, q):
+        super(ImageAnalyzer, self).__init__()
+        self.image_queue = q
+        self.mobj_id = get_application_managed_object_id()
+
+    def get_measurement_json_template(self, fragment, series, value):
+        return {
+            "time": datetime.utcnow().isoformat() + 'Z',
+            "type": "media_server_image_classification",
+            "source": {"id": self.mobj_id},
+            "color": {
+                #f"{series}": {"value": value},
+            },
+        }
+
+    def run(self):
+        while True:
+            try:
+                (stream, frame_bytes) = self.image_queue.get()
+                resp = requests.post(stream.analyser_url, headers={
+                    'Content-Type': 'application/octet-stream',
+                }, data=frame_bytes)
+                resp_json = resp.json()
+                print(resp_json)
+                m = self.get_measurement_json_template()
+                for p in resp_json['predictions']:
+                    selected_val = float(p['probablility']) * 100
+                    selected_tag = p['tagName']
+                    m['color'][selected_tag] = {'value': selected_val}
+                    measurement_queue.put(m)
+
+            except Exception as e:
+                print(f'Azure error: {e}')
+
+img_analyser = ImageAnalyzer(image_analyser_queue)
+measurement_generator = ImageAnalyzer(measurement_queue)
 
 class RTMPReader(Thread):
 
-    def __init__(self, stream, intervalSecs):
+    def __init__(self, stream):
         super(RTMPReader, self).__init__()
+        self.stream = stream
         self.url = stream.url if stream.datafile is None else stream.datafile
         self.simultation_mode = stream.datafile is not None
-        self.intervalSecs = float(intervalSecs)
+        self.intervalSecs = float(stream.frame_interval_secs)
         self.frameSkip = 1
         self.id = stream.id
         self._stop = False
@@ -47,6 +112,8 @@ class RTMPReader(Thread):
                         break
                     else:
                         return
+                _, jpg = cv2.imencode('.jpg', frame)
+                image_analyser_queue.put((self.stream, jpg.tobytes()))
                 self.publish_frame_to_live_queues(frame)
                 #cv2.imwrite(f'img_{self.id}_{count}.jpg', frame)
                 count += 1
@@ -105,7 +172,7 @@ class MediaServer:
         s.id = self.get_next_id()
         if s.id not in self.streams:
             self.streams[s.id] = s
-            r = RTMPReader(s, 1)
+            r = RTMPReader(s)
             self.streamThreads[s.id] = r
             r.start()
             return s
@@ -118,7 +185,7 @@ class MediaServer:
         os = Stream(**d)
         self.streamThreads[s.id].stop()
         ql = self.streamThreads[s.id].get_live_queues()
-        r = RTMPReader(os, 1)
+        r = RTMPReader(os)
         r.set_live_queues(ql)
         self.streamThreads[os.id] = r
         r.start()
