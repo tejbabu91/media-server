@@ -89,7 +89,10 @@ def packages_delete(sid):
     return Response(status=201)
 
 if __name__ == '__main__':
-    print(f'Current Application ID is {get_current_application_id()}')
-    print(f'Managed Object mapped to current application is {get_application_managed_object_id()}')
+    try:
+      print(f'Current Application ID is {get_current_application_id()}')
+      print(f'Managed Object mapped to current application is {get_application_managed_object_id()}')
+    except:
+      pass
     app.data = MediaServer()
     app.run(host='0.0.0.0', port=(5000 if len(sys.argv) == 1 else int(sys.argv[1])))

@@ -34,7 +34,10 @@ def platform_request(method, path, body=None, headers=None):
 		port = int(host.split(':')[1])
 		host = host.split(':')[0]
 
-	conn = HTTPSConnection(host=host, port=port, context=sslctx)
+	if useHTTPS:
+		conn = HTTPSConnection(host=host, port=port, context=sslctx)
+	else:
+		conn = HTTPConnection(host=host, port=port)
 
 	if 'Authorization' not in headers:
 		headers["Authorization"] = "Basic " + base64.b64encode(bytes(f'{get_c8y_tenant()}/{get_c8y_username()}:{get_c8y_password()}', "utf8")).decode()
