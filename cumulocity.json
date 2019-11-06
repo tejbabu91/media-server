@@ -1,17 +1,17 @@
 {
-  "apiVersion":"1",
-  "version":"1.0.0",
-  "name":"media-service",
-  "type":"MICROSERVICE",
-  "key":"media-service-key",
+  "apiVersion": "1",
+  "version": "1.0.0",
+  "name": "media-service",
+  "type": "MICROSERVICE",
+  "key": "media-service-key",
   "provider": {
-    "name":"Software AG"
+    "name": "Software AG"
   },
-  "contextPath":"cep",
-  "isolation":"PER_TENANT",
-  "resources":{
+  "contextPath": "mediaservice",
+  "isolation": "PER_TENANT",
+  "resources": {
     "cpu": "1",
-    "memory":"4Gi"
+    "memory": "4Gi"
   },
   "requiredRoles": [
     "ROLE_APPLICATION_MANAGEMENT_READ",
@@ -34,4 +34,5 @@
     "ROLE_OPTION_MANAGEMENT_ADMIN",
     "ROLE_OPTION_MANAGEMENT_READ"
   ],
+	"roles": []
 }
