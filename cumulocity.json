@@ -1,0 +1,37 @@
+{
+  "apiVersion":"1",
+  "version":"1.0.0",
+  "name":"media-service",
+  "type":"MICROSERVICE",
+  "key":"media-service-key",
+  "provider": {
+    "name":"Software AG"
+  },
+  "contextPath":"cep",
+  "isolation":"PER_TENANT",
+  "resources":{
+    "cpu": "1",
+    "memory":"4Gi"
+  },
+  "requiredRoles": [
+    "ROLE_APPLICATION_MANAGEMENT_READ",
+    "ROLE_APPLICATION_MANAGEMENT_ADMIN",
+    "ROLE_INVENTORY_READ",
+    "ROLE_INVENTORY_ADMIN",
+    "ROLE_INVENTORY_CREATE",
+    "ROLE_MEASUREMENT_READ",
+    "ROLE_MEASUREMENT_ADMIN",
+    "ROLE_EVENT_READ", 
+    "ROLE_EVENT_ADMIN",
+    "ROLE_ALARM_READ",
+    "ROLE_ALARM_ADMIN",
+    "ROLE_DEVICE_CONTROL_READ",
+    "ROLE_DEVICE_CONTROL_ADMIN",
+    "ROLE_IDENTITY_READ",
+    "ROLE_IDENTITY_ADMIN",
+    "ROLE_CEP_MANAGEMENT_READ",
+    "ROLE_CEP_MANAGEMENT_ADMIN",
+    "ROLE_OPTION_MANAGEMENT_ADMIN",
+    "ROLE_OPTION_MANAGEMENT_READ"
+  ],
+}

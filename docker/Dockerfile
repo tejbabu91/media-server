@@ -14,5 +14,5 @@ RUN pip install flask opencv-contrib-python imutils dataclasses_json
 RUN rm -rf Python-3.7.5 Python-3.7.5.tgz
 
 RUN mkdir media-server
-ADD config.py __init__.py  model.py  __pycache__  server.py  test.json media-server/
+ADD config.py __init__.py  model.py server.py  test.json media-server/
 RUN dnf install -y opencv-core
