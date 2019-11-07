@@ -26,6 +26,14 @@ def packages_get():
     s = {'streams': list(map(lambda x: x.to_dict(), s))}
     return s
 
+@app.route('/streams/<sid>', methods=['GET'])
+def packages_get_id(sid):
+    s = app.data.get_all_streams()
+    for i in map(lambda x: x.to_dict(), s):
+        if i['id'] == sid:
+            return i
+    return s
+
 
 @app.route('/streams', methods=['POST'])
 def packages_post():
@@ -52,24 +60,26 @@ def packages_data_post(sid):
             tmpfd.write(chunk)
         tmpfd.close()
     s.datafile = tmpfilepath
+    print(f'After tempfile update: {s}')
     app.data.update_stream(s)
     return Response(status=201)
 
-def gen_live_feed(t, q):
-    t.add_live_queue(q)
-    while t.is_alive():
+def gen_live_feed(q):
+    while True:
         frame = q.get()
-        if type(frame) == bool and frame == True:
+        if isinstance(frame, bool) and frame is True:
             break
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
-    t.remove_live_queue(q)
 
 @app.route('/streams/live/<sid>', methods=['GET'])
 def packages_live_get(sid):
     t = app.data.get_stream_thread(sid)
     q = queue.SimpleQueue()
-    return Response(gen_live_feed(t, q), mimetype='multipart/x-mixed-replace; boundary=frame')
+    t.add_live_queue(q)
+    r = Response(gen_live_feed(q), mimetype='multipart/x-mixed-replace; boundary=frame')
+    r.call_on_close(lambda: t.remove_live_queue(q) and q.put(True))
+    return r
 
 
 @app.route('/streams/<sid>', methods=['PUT'])

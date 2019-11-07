@@ -117,11 +117,13 @@ class RTMPReader(Thread):
                     if self.simultation_mode:
                         break
                     else:
+                        self.send_close_to_live_queues()
                         return
                 _, jpg = cv2.imencode('.jpg', frame)
                 print(f'putting frame on queue')
                 image_analyser_queue.put((self.stream, jpg))
                 self.publish_frame_to_live_queues(frame)
+                time.sleep(1.0 / fps)
                 #cv2.imwrite(f'img_{self.id}_{count}.jpg', frame)
                 count += 1
                 i = 0
@@ -131,15 +133,15 @@ class RTMPReader(Thread):
                         break
                     i += 1
                     self.publish_frame_to_live_queues(frame)
-                    time.sleep(1.0/self.frameSkip)
+                    time.sleep(1.0/fps)
 
             cap.release()
-            cv2.destroyAllWindows()
 
     def add_live_queue(self, q):
         self.live_queues.append(q)
 
     def remove_live_queue(self, q):
+        print('##### Remove live queue called')
         self.live_queues.remove(q)
 
     def get_live_queues(self):
@@ -153,6 +155,11 @@ class RTMPReader(Thread):
         for q in self.live_queues:
             # print(f'putting frame - {f}')
             q.put(f, block=False)
+
+    def send_close_to_live_queues(self):
+        for q in self.live_queues:
+            # print(f'putting frame - {f}')
+            q.put(True, block=False)
 
 
 @dataclass()
@@ -189,9 +196,10 @@ class MediaServer:
         os = self.streams[s.id]
         d = os.to_dict()
         d.update(s.to_dict())
-        os = Stream(**d)
-        self.streamThreads[s.id].stop()
+        ns = Stream(**d)
+        self.streams[s.id] = ns
         ql = self.streamThreads[s.id].get_live_queues()
+        self.streamThreads[s.id].stop()
         r = RTMPReader(os)
         r.set_live_queues(ql)
         self.streamThreads[os.id] = r
