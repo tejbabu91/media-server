@@ -74,7 +74,7 @@ class ImageAnalyzer(Thread):
                 print(f'Azure response: {resp_json}')
                 m = self.get_measurement_json_template(stream.id)
                 for p in resp_json['predictions']:
-                    selected_val = float(p['probability']) * 255
+                    selected_val = float(p['probability'])
                     selected_tag = p['tagName']
                     m['color'][selected_tag] = {'value': selected_val}
                 measurement_queue.put(m)
